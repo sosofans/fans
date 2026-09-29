@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>好友專屬-蝦皮推廣連結轉換器</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f7f9fa;
+            color: #333;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 480px;
+            box-sizing: border-box;
+        }
+        h1 {
+            font-size: 20px;
+            color: #ee4d2d;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        p {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            resize: none;
+            box-sizing: border-box;
+            margin-bottom: 15px;
+        }
+        textarea:focus {
+            border-color: #ee4d2d;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            background-color: #ee4d2d;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #d73f21;
+        }
+        .result-box {
+            margin-top: 20px;
+            display: none;
+            background: #fff8f6;
+            border: 1px dashed #ee4d2d;
+            padding: 15px;
+            border-radius: 6px;
+            word-break: break-all;
+        }
+        .result-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #ee4d2d;
+            margin-bottom: 8px;
+        }
+        .result-url {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .copy-btn {
+            background-color: #555;
+            padding: 8px;
+            font-size: 14px;
+        }
+        .copy-btn:hover {
+            background-color: #333;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🛒 蝦皮好友購物轉換器</h1>
+    <p>請在下方貼上您想購買的「蝦皮商品網址」，即可一鍵轉換！</p>
+    
+    <textarea id="inputUrl" placeholder="請在此處貼上蝦皮網址... (例如: https://shopee.tw...)"></textarea>
+    <button onclick="convertUrl()">立即轉換連結</button>
+
+    <div id="resultBox" class="result-box">
+        <div class="result-title">✨ 轉換成功！請複製下方連結購買：</div>
+        <div id="resultUrl" class="result-url"></div>
+        <button id="copyBtn" class="copy-btn" onclick="copyToClipboard()">一鍵複製連結</button>
+    </div>
+</div>
+
+<script>
+    // 您的專屬分潤通道識別碼
+    const MY_CHANNEL_ID = "9fLHDaRIoQ";
+
+    function convertUrl() {
+        const input = document.getElementById('inputUrl').value.trim();
+        const resultBox = document.getElementById('resultBox');
+        const resultUrl = document.getElementById('resultUrl');
+
+        if (!input) {
+            alert('請先貼上蝦皮商品網址喔！');
+            return;
+        }
+
+        // 檢查是否包含蝦皮域名
+        if (!input.includes('shopee.tw') && !input.includes('s.shopee.tw')) {
+            alert('這似乎不是正確的蝦皮網址，請重新複製商品網址！');
+            return;
+        }
+
+        try {
+            // 清理網址，提取原始商品特徵或將其作為參數打包進您的專屬通道
+            let cleanUrl = input.split('?')[0]; // 去除好友網址可能自帶的他人追蹤參數
+            
+            // 產生透過您的分潤網址導向的專屬組合網址
+            // 此處採用最通用的跳轉機制，將好友目標網址安全注入您的推廣通道中
+            let finalLink = `https://shopee.tw{MY_CHANNEL_ID}?smtt=0.0.9&url=${encodeURIComponent(input)}`;
+
+            resultUrl.innerText = finalLink;
+            resultBox.style.display = 'block';
+            document.getElementById('copyBtn').innerText = "一鍵複製連結";
+        } catch (e) {
+            alert('網址轉換失敗，請確保複製了完整的商品連結！');
+        }
+    }
+
+    function copyToClipboard() {
+        const text = document.getElementById('resultUrl').innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            const copyBtn = document.getElementById('copyBtn');
+            copyBtn.innerText = "✅ 複製成功！快去貼給好友吧";
+            copyBtn.style.backgroundColor = "#2ecc71";
+            setTimeout(() => {
+                copyBtn.style.backgroundColor = "#555";
+                copyBtn.innerText = "一鍵複製連結";
+            }, 2000);
+        }).catch(err => {
+            alert('複製失敗，請手動選取網址進行複製！');
+        });
+    }
+</script>
+
+</body>
+</html>
