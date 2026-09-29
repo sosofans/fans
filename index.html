@@ -210,7 +210,8 @@
                 validCount++;
                 
                 // 網址直接組合，不經過舊變數代換
-                let finalLink = "https://shopee.tw" + encodeURIComponent(url);
+                let finalLink = `https://shopee.tw{encodeURIComponent(url)}`;
+
                 allGeneratedLinks.push(finalLink);
                 
                 let itemDiv = document.createElement('div');
