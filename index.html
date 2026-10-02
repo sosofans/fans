@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>蝦皮推廣連結轉換器</title>
+<style>
+  :root{--bg:#fdeee9;--card:#fff;--text:#2b2b2b;--sub:#666;--accent:#ee4d2d;--border:#e3e3e3;--chip:#fdeee9;--gray:#f1f1f1}
+  @media (prefers-color-scheme:dark){:root{--bg:#1d1513;--card:#2a201d;--text:#f2ece9;--sub:#b5a9a5;--border:#4a3b36;--chip:#3a2621;--gray:#3a302d}}
+  *{box-sizing:border-box}
+  body{margin:0;padding:24px 16px;background:var(--bg);color:var(--text);font-family:-apple-system,"Noto Sans TC","PingFang TC",sans-serif}
+  .card{max-width:520px;margin:0 auto;background:var(--card);border-radius:28px;padding:28px 24px}
+  h1{color:var(--accent);font-size:28px;margin:0 0 8px}
+  p.sub{color:var(--sub);margin:0 0 24px}
+  label{font-weight:700;display:block;margin-bottom:8px}
+  textarea{width:100%;height:180px;border:1px solid var(--border);border-radius:20px;padding:14px;font-size:15px;background:transparent;color:var(--text);resize:vertical}
+  button{width:100%;border:0;border-radius:999px;padding:16px;font-size:17px;font-weight:700;margin-top:12px;cursor:pointer}
+  #go{background:var(--accent);color:#fff}
+  #clear{background:var(--gray);color:var(--text)}
+  button:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+  #out{margin-top:20px}
+  .item{border:1px solid var(--border);border-radius:16px;padding:12px;margin-top:10px;word-break:break-all;font-size:13px}
+  .item button{margin-top:8px;padding:10px;font-size:14px;background:var(--accent);color:#fff}
+  #copyall{background:var(--accent);color:#fff;margin-top:0}
+  .err{color:var(--accent);font-weight:700}
+</style>
+</head>
+<body>
+<main class="card">
+  <h1>蝦皮推廣連結轉換器</h1>
+  <p class="sub">貼上商品連結，轉換後再點進去下單。</p>
+  <label for="in">蝦皮連結</label>
+  <textarea id="in" placeholder="一次最多貼上 5 個蝦皮連結，每行一個"></textarea>
+  <button id="go">產生推廣連結</button>
+  <button id="clear">清除</button>
+  <div id="out" aria-live="polite"></div>
+</main>
+<script>
+const AFFILIATE_ID = "16323820039";
+const SUB_ID = "converter"; // 不想追蹤就改成 ""
+const EXPAND_API = "https://billowing-band-f389.tt0291788.workers.dev"; // 短網址展開服務（Cloudflare Worker 網址），沒有就留空
+const MAX = 5;
+const $ = id => document.getElementById(id);
+const isShopee = u => /^https?:\/\/([\w-]+\.)*(shopee\.tw|shp\.ee)(\/|$)/i.test(u);
+const isShort = u => /^https?:\/\/([\w-]+\.)*shp\.ee(\/|$)/i.test(u);
+
+async function expand(u){
+  const r = await fetch(EXPAND_API + "?url=" + encodeURIComponent(u));
+  if(!r.ok) throw new Error("expand");
+  const t = (await r.text()).trim();
+  try{ const x = new URL(t); return x.origin + x.pathname; }catch(e){ return t; }
+}
+async function convert(url){
+  let u = url.trim();
+  if(!isShopee(u)) throw new Error("不是蝦皮連結");
+  if(isShort(u)){
+    if(!EXPAND_API) throw new Error("請貼完整商品網址（shopee.tw/...）");
+    u = await expand(u);
+  }
+  let s = "https://s.shopee.tw/an_redir?origin_link=" + encodeURIComponent(u) + "&affiliate_id=" + AFFILIATE_ID;
+  if(SUB_ID) s += "&sub_id=" + encodeURIComponent(SUB_ID);
+  return s;
+}
+async function copy(text, btn, done){
+  try{ await navigator.clipboard.writeText(text); btn.textContent = done; }
+  catch(e){ btn.textContent = "複製失敗，請長按文字複製"; }
+}
+
+$("go").onclick = async () => {
+  const out = $("out"); out.innerHTML = "";
+  const lines = $("in").value.split(/\n/).map(x=>x.trim()).filter(Boolean);
+  if(!lines.length){ out.innerHTML = '<p class="err">請先貼上至少一個蝦皮連結。</p>'; return; }
+  if(lines.length > MAX){ out.innerHTML = '<p class="err">一次最多 5 個連結，請減少後再試。</p>'; return; }
+  out.textContent = "轉換中…";
+  const results = await Promise.all(lines.map(l => convert(l).then(v=>({ok:v})).catch(e=>({err:e.message==="expand"?"短網址展開失敗":e.message}))));
+  out.innerHTML = "";
+  const good = results.filter(r=>r.ok).map(r=>r.ok);
+  if(good.length){
+    const all = document.createElement("button");
+    all.id = "copyall"; all.textContent = "複製全部（" + good.length + " 個）";
+    all.onclick = () => copy(good.join("\n\n"), all, "已複製全部");
+    out.appendChild(all);
+  }
+  results.forEach((r,i)=>{
+    const d = document.createElement("div"); d.className = "item";
+    if(r.err){ d.innerHTML = '<span class="err">第 ' + (i+1) + ' 行：' + r.err + '</span>'; }
+    else{
+      const t = document.createElement("div"); t.textContent = r.ok; d.appendChild(t);
+      const b = document.createElement("button"); b.textContent = "複製這個";
+      b.onclick = () => copy(r.ok, b, "已複製");
+      d.appendChild(b);
+    }
+    out.appendChild(d);
+  });
+};
+$("clear").onclick = () => { $("in").value = ""; $("out").innerHTML = ""; };
+</script>
+</body>
+</html>
